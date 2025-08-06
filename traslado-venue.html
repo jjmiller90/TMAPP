@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyBxOpNyCRCMT-wiKs9PxJIqD3rSHnq8La4",
+  authDomain: "tour-management-app-bc46e.firebaseapp.com",
+  projectId: "tour-management-app-bc46e",
+  storageBucket: "tour-management-app-bc46e.firebasestorage.app",
+  messagingSenderId: "665605599526",
+  appId: "1:665605599526:web:5499d618c578e98f1c11e7"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Este código redirige al login si el usuario no está autenticado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traslado a Venue</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCaoBW549W1G0VNvssQIQhW7DU6d1hHc6Q&libraries=places,routes&callback=initMap"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 1000px; margin: auto; }
+        .section-card { background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        input, select { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; width: 100%; }
+        button { transition: all 0.2s; }
+        button:hover { opacity: 0.9; }
+        #map { height: 400px; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+    <div class="container flex flex-col gap-8">
+        <a href="index.html" class="text-blue-600 hover:underline font-bold mb-4">← Volver al Menú</a>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-center text-gray-900 mt-4 mb-4 md:mt-8">
+            Traslado a Venue
+        </h1>
+        <div class="section-card">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+                Calcular Hora de Salida y Mensaje
+            </h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-700">Datos de Traslado</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="origin-input" class="block text-gray-600 font-medium mb-1">Origen (Hotel)</label>
+                            <input type="text" id="origin-input" placeholder="Ej: Hotel Hilton CDMX">
+                        </div>
+                        <div>
+                            <label for="venue-destination-input" class="block text-gray-600 font-medium mb-1">Destino (Venue)</label>
+                            <input type="text" id="venue-destination-input" placeholder="Ej: Auditorio Nacional">
+                            <label for="venue-arrival-date-input" class="block text-gray-600 font-medium mb-1 mt-2">Fecha de llegada al Venue</label>
+                            <input type="date" id="venue-arrival-date-input" value="">
+                            <label for="venue-arrival-time-input" class="block text-gray-600 font-medium mb-1 mt-2">Hora de llegada al Venue</label>
+                            <input type="time" id="venue-arrival-time-input" value="17:00">
+                            <button id="calculate-venue" class="bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg w-full mt-4 hover:bg-green-600">
+                                Calcular Salida a Venue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-700">Generar Mensaje</h3>
+                    <div class="space-y-4">
+                        <textarea id="message-output" class="w-full h-40 p-3 text-gray-800 bg-gray-50 border-gray-300 rounded-lg shadow-inner" placeholder="El mensaje aparecerá aquí..." readonly></textarea>
+                        <button id="generate-venue-soundcheck" class="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg w-full hover:bg-purple-600">
+                            Mensaje: Soundcheck
+                        </button>
+                        <button id="generate-venue-show" class="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg w-full hover:bg-purple-600">
+                            Mensaje: Show
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 section-card">
+            <h3 class="text-2xl font-semibold mb-4 text-gray-700">Visualización de Ruta</h3>
+            <div id="map" class="h-80 w-full rounded-lg shadow-inner"></div>
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-600 font-medium mb-2">Link a Google Maps:</p>
+                <a id="maps-link" href="#" target="_blank" class="text-blue-600 font-bold hover:underline break-words">
+                    El link de la ruta aparecerá aquí
+                </a>
+            </div>
+        </div>
+    </div>
+    <script>
+        let placesService, distanceMatrixService, map, directionsService, directionsRenderer;
+        let departureTime = null;
+
+        function initMap() {
+            placesService = new google.maps.places.AutocompleteService();
+            distanceMatrixService = new google.maps.DistanceMatrixService();
+            const mapCenter = { lat: 19.4326, lng: -99.1332 };
+            map = new google.maps.Map(document.getElementById('map'), { zoom: 10, center: mapCenter });
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+            new google.maps.places.Autocomplete(document.getElementById('origin-input'));
+            new google.maps.places.Autocomplete(document.getElementById('venue-destination-input'));
+        }
+
+        function formatTime(date) { return date.toTimeString().slice(0, 5); }
+async function calculateDeparture() {
+    const origin = document.getElementById('origin-input').value;
+    const destination = document.getElementById('venue-destination-input').value;
+    const arrivalDate = document.getElementById('venue-arrival-date-input').value;
+    const arrivalTime = document.getElementById('venue-arrival-time-input').value;
+    const mapsLinkElement = document.getElementById('maps-link');
+
+    if (!origin || !destination || !arrivalDate || !arrivalTime) {
+        document.getElementById('message-output').value = 'Por favor, completa todos los campos (origen, destino, fecha y hora).';
+        return;
+    }
+
+    const arrivalDateTime = new Date(`${arrivalDate}T${arrivalTime}:00`);
+    const currentTime = new Date();
+    
+    if (arrivalDateTime < currentTime) {
+        document.getElementById('message-output').value = 'Error: Por favor, ingresa una fecha y hora de llegada en el futuro.';
+        return;
+    }
+
+    document.getElementById('message-output').value = 'Calculando tiempo de viaje con tráfico estimado...';
+
+    // Estimamos la hora de salida (1 hora antes) para que el API pueda calcular el tráfico
+    const initialDepartureTime = new Date(arrivalDateTime.getTime() - 60 * 60000);
+
+    if (directionsService && directionsRenderer) {
+        const request = {
+            origin,
+            destination,
+            travelMode: google.maps.TravelMode.DRIVING,
+            drivingOptions: {
+                departureTime: initialDepartureTime,
+                trafficModel: 'bestguess'
+            }
+        };
+
+        directionsService.route(request, (response, status) => {
+            if (status === 'OK') {
+                const route = response.routes[0];
+                const leg = route.legs[0];
+                const durationInSeconds = leg.duration_in_traffic.value;
+                const travelTimeWithBuffer = Math.ceil(durationInSeconds / 60) + 20;
+
+                const departureDateObj = new Date(arrivalDateTime.getTime() - (travelTimeWithBuffer) * 60000);
+                departureTime = formatTime(departureDateObj);
+                document.getElementById('message-output').value = `Hora de salida al venue: ${departureTime} (Incluye 20 min de buffer)`;
+
+                directionsRenderer.setDirections(response);
+
+                const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+                mapsLinkElement.href = mapsUrl;
+                mapsLinkElement.textContent = "Abrir ruta en Google Maps";
+            } else {
+                document.getElementById('message-output').value = 'No se pudo calcular el tiempo de viaje. Revisa las direcciones.';
+                directionsRenderer.setDirections({ routes: [] });
+                mapsLinkElement.textContent = 'El link de la ruta aparecerá aquí';
+                mapsLinkElement.href = '#';
+                console.error('Error al dibujar la ruta:', status);
+            }
+        });
+    }
+}
+
+        function generateMessage(type) {
+            if (!departureTime) {
+                document.getElementById('message-output').value = `Por favor, calcula la hora de salida al venue primero.`;
+                return;
+            }
+            const messages = {
+                'venue-soundcheck': `¡Llamado a soundcheck!\n\nSalimos del hotel a las ${departureTime} para llegar a tiempo al venue.`,
+                'venue-show': `¡Llamado a show!\n\nSalimos del hotel a las ${departureTime} para llegar a tiempo al venue.`
+            };
+            document.getElementById('message-output').value = messages[type];
+        }
+
+        document.getElementById('calculate-venue').addEventListener('click', calculateDeparture);
+        document.getElementById('generate-venue-soundcheck').addEventListener('click', () => generateMessage('venue-soundcheck'));
+        document.getElementById('generate-venue-show').addEventListener('click', () => generateMessage('venue-show'));
+    </script>
+</body>
+</html>

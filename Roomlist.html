@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyBxOpNyCRCMT-wiKs9PxJIqD3rSHnq8La4",
+  authDomain: "tour-management-app-bc46e.firebaseapp.com",
+  projectId: "tour-management-app-bc46e",
+  storageBucket: "tour-management-app-bc46e.firebasestorage.app",
+  messagingSenderId: "665605599526",
+  appId: "1:665605599526:web:5499d618c578e98f1c11e7"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Este código redirige al login si el usuario no está autenticado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roomlist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 1000px; margin: auto; }
+        .section-card { background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        input, select { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; width: 100%; }
+        button { transition: all 0.2s; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+    <div class="container flex flex-col gap-8">
+        <a href="index.html" class="text-blue-600 hover:underline font-bold mb-4">← Volver al Menú</a>
+        
+        <div id="reservation-input-section" class="section-card text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mt-4 mb-4 md:mt-8">
+                Roomlist
+            </h1>
+            <p class="text-gray-600 mb-4">Por favor, ingresa el código de la reservación para continuar.</p>
+            <div class="flex justify-center gap-2">
+                <input type="text" id="reservation-input" placeholder="Código de reservación" class="w-full max-w-sm">
+                <button id="enter-reservation" class="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-600">Entrar</button>
+            </div>
+        </div>
+
+        <div id="roomlist-content" class="hidden">
+            <h1 id="page-title" class="text-4xl md:text-5xl font-extrabold text-center text-gray-900 mt-4 mb-4 md:mt-8"></h1>
+            <div class="section-card">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+                    Agregar Huesped
+                </h2>
+                <form id="roomlist-form" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label for="nombre" class="block text-gray-600 font-medium mb-1">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" required>
+                    </div>
+                    <div>
+                        <label for="apellido" class="block text-gray-600 font-medium mb-1">Apellido</label>
+                        <input type="text" id="apellido" name="apellido" required>
+                    </div>
+                    <div>
+                        <label for="piso" class="block text-gray-600 font-medium mb-1">Piso</label>
+                        <input type="number" id="piso" name="piso" required>
+                    </div>
+                    <div>
+                        <label for="numeroCuarto" class="block text-gray-600 font-medium mb-1">Número de Cuarto</label>
+                        <input type="text" id="numeroCuarto" name="numeroCuarto" required>
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-3 flex justify-end gap-2 mt-4">
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-600">
+                            Agregar Huesped
+                        </button>
+                        <button type="button" id="clear-form" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-gray-500">
+                            Limpiar
+                        </button>
+                    </div>
+                </form>
+            </div>
+    
+            <div class="section-card mt-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+                    Lista de Habitaciones
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100 text-left text-gray-600 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Nombre</th>
+                                <th class="py-3 px-6 text-left">Piso</th>
+                                <th class="py-3 px-6 text-left">Número de Cuarto</th>
+                                <th class="py-3 px-6 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roomlist-table-body" class="text-gray-600 text-sm font-light">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const reservationInputSection = document.getElementById('reservation-input-section');
+        const reservationInput = document.getElementById('reservation-input');
+        const enterReservationBtn = document.getElementById('enter-reservation');
+        const roomlistContent = document.getElementById('roomlist-content');
+        const pageTitle = document.getElementById('page-title');
+        
+        const form = document.getElementById('roomlist-form');
+        const tableBody = document.getElementById('roomlist-table-body');
+        const clearFormBtn = document.getElementById('clear-form');
+        
+        let currentReservation = localStorage.getItem('currentReservation');
+        let rooms = JSON.parse(localStorage.getItem(`roomlist-${currentReservation}`)) || [];
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            rooms.forEach((room, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${room.nombre} ${room.apellido}</td>
+                    <td class="py-3 px-6 text-left">${room.piso}</td>
+                    <td class="py-3 px-6 text-left">${room.numeroCuarto}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editRoom(${index})" class="text-blue-500 hover:text-blue-700 font-bold mr-2">Editar</button>
+                        <button onclick="deleteRoom(${index})" class="text-red-500 hover:text-red-700 font-bold">Eliminar</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function saveRooms() {
+            localStorage.setItem(`roomlist-${currentReservation}`, JSON.stringify(rooms));
+        }
+
+        function clearForm() {
+            form.reset();
+        }
+
+        function enterReservation() {
+            const reservationCode = reservationInput.value.trim();
+            if (reservationCode) {
+                currentReservation = reservationCode;
+                localStorage.setItem('currentReservation', currentReservation);
+                rooms = JSON.parse(localStorage.getItem(`roomlist-${currentReservation}`)) || [];
+                
+                pageTitle.textContent = `Roomlist: ${currentReservation}`;
+                reservationInputSection.classList.add('hidden');
+                roomlistContent.classList.remove('hidden');
+                renderTable();
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newRoom = {
+                nombre: document.getElementById('nombre').value,
+                apellido: document.getElementById('apellido').value,
+                piso: document.getElementById('piso').value,
+                numeroCuarto: document.getElementById('numeroCuarto').value,
+            };
+            rooms.push(newRoom);
+            saveRooms();
+            renderTable();
+            clearForm();
+        });
+
+        clearFormBtn.addEventListener('click', clearForm);
+
+        function editRoom(index) {
+            const room = rooms[index];
+            document.getElementById('nombre').value = room.nombre;
+            document.getElementById('apellido').value = room.apellido;
+            document.getElementById('piso').value = room.piso;
+            document.getElementById('numeroCuarto').value = room.numeroCuarto;
+            
+            rooms.splice(index, 1);
+            saveRooms();
+            renderTable();
+        }
+
+        function deleteRoom(index) {
+            if (confirm('¿Estás seguro de que quieres eliminar este registro de habitación?')) {
+                rooms.splice(index, 1);
+                saveRooms();
+                renderTable();
+            }
+        }
+
+        // Lógica para mostrar la sección correcta al cargar la página
+        if (currentReservation) {
+            pageTitle.textContent = `Roomlist: ${currentReservation}`;
+            reservationInputSection.classList.add('hidden');
+            roomlistContent.classList.remove('hidden');
+            renderTable();
+        }
+
+        enterReservationBtn.addEventListener('click', enterReservation);
+        reservationInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                enterReservation();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyBxOpNyCRCMT-wiKs9PxJIqD3rSHnq8La4",
+  authDomain: "tour-management-app-bc46e.firebaseapp.com",
+  projectId: "tour-management-app-bc46e",
+  storageBucket: "tour-management-app-bc46e.firebasestorage.app",
+  messagingSenderId: "665605599526",
+  appId: "1:665605599526:web:5499d618c578e98f1c11e7"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Este código redirige al login si el usuario no está autenticado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vuelos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 1000px; margin: auto; }
+        .section-card { background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        input, select { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; width: 100%; }
+        button { transition: all 0.2s; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+    <div class="container flex flex-col gap-8">
+        <a href="index.html" class="text-blue-600 hover:underline font-bold mb-4">← Volver al Menú</a>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-center text-gray-900 mt-4 mb-4 md:mt-8">
+            Vuelos
+        </h1>
+
+        <div class="section-card">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+                Agregar Nuevo Vuelo
+            </h2>
+            <form id="vuelo-form" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label for="nombre" class="block text-gray-600 font-medium mb-1">Nombre</label>
+                    <input type="text" id="nombre" name="nombre" required>
+                </div>
+                <div>
+                    <label for="apellido" class="block text-gray-600 font-medium mb-1">Apellido</label>
+                    <input type="text" id="apellido" name="apellido" required>
+                </div>
+                <div>
+                    <label for="aerolinea" class="block text-gray-600 font-medium mb-1">Aerolínea</label>
+                    <input type="text" id="aerolinea" name="aerolinea" required>
+                </div>
+                <div>
+                    <label for="numeroVuelo" class="block text-gray-600 font-medium mb-1">Número de Vuelo</label>
+                    <input type="text" id="numeroVuelo" name="numeroVuelo" required>
+                </div>
+                <div>
+                    <label for="salida" class="block text-gray-600 font-medium mb-1">Horario de Salida</label>
+                    <input type="datetime-local" id="salida" name="salida" required>
+                </div>
+                <div>
+                    <label for="llegada" class="block text-gray-600 font-medium mb-1">Horario de Llegada</label>
+                    <input type="datetime-local" id="llegada" name="llegada" required>
+                </div>
+                <div>
+                    <label for="reservacion" class="block text-gray-600 font-medium mb-1">Reservación</label>
+                    <input type="text" id="reservacion" name="reservacion" required>
+                </div>
+                <div class="md:col-span-2 lg:col-span-3 flex justify-end gap-2 mt-4">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-600">
+                        Agregar Vuelo
+                    </button>
+                    <button type="button" id="clear-form" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-gray-500">
+                        Limpiar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="section-card mt-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+                Lista de Vuelos
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100 text-left text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Nombre</th>
+                            <th class="py-3 px-6 text-left">Aerolínea</th>
+                            <th class="py-3 px-6 text-left">Vuelo</th>
+                            <th class="py-3 px-6 text-left">Salida</th>
+                            <th class="py-3 px-6 text-left">Llegada</th>
+                            <th class="py-3 px-6 text-left">Reservación</th>
+                            <th class="py-3 px-6 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vuelos-table-body" class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('vuelo-form');
+        const tableBody = document.getElementById('vuelos-table-body');
+        const clearFormBtn = document.getElementById('clear-form');
+        let vuelos = JSON.parse(localStorage.getItem('vuelos')) || [];
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            vuelos.forEach((vuelo, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200 hover:bg-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${vuelo.nombre} ${vuelo.apellido}</td>
+                    <td class="py-3 px-6 text-left">${vuelo.aerolinea}</td>
+                    <td class="py-3 px-6 text-left">${vuelo.numeroVuelo}</td>
+                    <td class="py-3 px-6 text-left">${vuelo.salida}</td>
+                    <td class="py-3 px-6 text-left">${vuelo.llegada}</td>
+                    <td class="py-3 px-6 text-left">${vuelo.reservacion}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="editVuelo(${index})" class="text-blue-500 hover:text-blue-700 font-bold mr-2">Editar</button>
+                        <button onclick="deleteVuelo(${index})" class="text-red-500 hover:text-red-700 font-bold">Eliminar</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function saveVuelos() {
+            localStorage.setItem('vuelos', JSON.stringify(vuelos));
+        }
+
+        function clearForm() {
+            form.reset();
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nuevoVuelo = {
+                nombre: document.getElementById('nombre').value,
+                apellido: document.getElementById('apellido').value,
+                aerolinea: document.getElementById('aerolinea').value,
+                numeroVuelo: document.getElementById('numeroVuelo').value,
+                salida: document.getElementById('salida').value,
+                llegada: document.getElementById('llegada').value,
+                reservacion: document.getElementById('reservacion').value,
+            };
+            vuelos.push(nuevoVuelo);
+            saveVuelos();
+            renderTable();
+            clearForm();
+        });
+
+        clearFormBtn.addEventListener('click', clearForm);
+
+        function editVuelo(index) {
+            const vuelo = vuelos[index];
+            document.getElementById('nombre').value = vuelo.nombre;
+            document.getElementById('apellido').value = vuelo.apellido;
+            document.getElementById('aerolinea').value = vuelo.aerolinea;
+            document.getElementById('numeroVuelo').value = vuelo.numeroVuelo;
+            document.getElementById('salida').value = vuelo.salida;
+            document.getElementById('llegada').value = vuelo.llegada;
+            document.getElementById('reservacion').value = vuelo.reservacion;
+            
+            // Eliminar el vuelo para que se reemplace al volver a enviar el formulario
+            vuelos.splice(index, 1);
+            saveVuelos();
+            renderTable();
+        }
+
+        function deleteVuelo(index) {
+            if (confirm('¿Estás seguro de que quieres eliminar este registro de vuelo?')) {
+                vuelos.splice(index, 1);
+                saveVuelos();
+                renderTable();
+            }
+        }
+
+        // Renderizar la tabla al cargar la página
+        renderTable();
+    </script>
+</body>
+</html>

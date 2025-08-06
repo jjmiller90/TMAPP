@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyBxOpNyCRCMT-wiKs9PxJIqD3rSHnq8La4",
+  authDomain: "tour-management-app-bc46e.firebaseapp.com",
+  projectId: "tour-management-app-bc46e",
+  storageBucket: "tour-management-app-bc46e.firebasestorage.app",
+  messagingSenderId: "665605599526",
+  appId: "1:665605599526:web:5499d618c578e98f1c11e7"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Este código redirige al login si el usuario no está autenticado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Staff</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 1000px; margin: auto; }
+        .section-card { background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        input, select { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; width: 100%; }
+        button { transition: all 0.2s; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+    <div class="container flex flex-col gap-8">
+        <a href="index.html" class="text-blue-600 hover:underline font-bold mb-4">← Volver al Menú</a>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-center text-gray-900 mt-4 mb-4 md:mt-8">
+            Checklist Staff
+        </h1>
+        <div class="section-card">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+                Checklists de Hospitalidad
+            </h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-700">Soundcheck</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="soundcheck-input" placeholder="Añadir nuevo artículo..." class="flex-grow">
+                        <button id="add-soundcheck" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-600">Añadir</button>
+                    </div>
+                    <ul id="soundcheck-staff-list" class="flex flex-col gap-2"></ul>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 text-gray-700">Show</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="show-input" placeholder="Añadir nuevo artículo..." class="flex-grow">
+                        <button id="add-show" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-600">Añadir</button>
+                    </div>
+                    <ul id="show-staff-list" class="flex flex-col gap-2"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function loadChecklist(id) {
+            const list = document.getElementById(id);
+            list.innerHTML = '';
+            const items = JSON.parse(localStorage.getItem(id)) || [];
+            items.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg shadow-sm';
+                li.innerHTML = `
+                    <input type="checkbox" ${item.checked ? 'checked' : ''} class="h-5 w-5 rounded text-blue-600 form-checkbox border-gray-300">
+                    <span class="flex-grow text-gray-800 ${item.checked ? 'line-through text-gray-400' : ''}">${item.text}</span>
+                    <button class="remove-item text-red-500 hover:text-red-700 font-bold text-sm" data-index="${index}">×</button>
+                `;
+                li.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+                    item.checked = e.target.checked;
+                    li.querySelector('span').classList.toggle('line-through', item.checked);
+                    li.querySelector('span').classList.toggle('text-gray-400', item.checked);
+                    saveChecklist(id);
+                });
+                li.querySelector('.remove-item').addEventListener('click', (e) => {
+                    const itemIndex = e.target.dataset.index;
+                    const items = JSON.parse(localStorage.getItem(id));
+                    items.splice(itemIndex, 1);
+                    localStorage.setItem(id, JSON.stringify(items));
+                    loadChecklist(id);
+                });
+                list.appendChild(li);
+            });
+        }
+        function saveChecklist(id) {
+            const list = document.getElementById(id);
+            const items = Array.from(list.children).map(li => {
+                return {
+                    text: li.querySelector('span').textContent,
+                    checked: li.querySelector('input[type="checkbox"]').checked
+                };
+            });
+            localStorage.setItem(id, JSON.stringify(items));
+        }
+        function addItem(inputId, listId) {
+            const input = document.getElementById(inputId);
+            if (input.value.trim() !== '') {
+                const item = { text: input.value, checked: false };
+                const items = JSON.parse(localStorage.getItem(listId)) || [];
+                items.push(item);
+                localStorage.setItem(listId, JSON.stringify(items));
+                loadChecklist(listId);
+                input.value = '';
+            }
+        }
+        document.getElementById('add-soundcheck').addEventListener('click', () => addItem('soundcheck-input', 'soundcheck-staff-list'));
+        document.getElementById('add-show').addEventListener('click', () => addItem('show-input', 'show-staff-list'));
+        loadChecklist('soundcheck-staff-list');
+        loadChecklist('show-staff-list');
+    </script>
+</body>
+</html>
