@@ -1,33 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBxOpNyCRCMT-wiKs9PxJIqD3rSHnq8La4",
-            authDomain: "tour-management-app-bc46e.firebaseapp.com",
-            projectId: "tour-management-app-bc46e",
-            storageBucket: "tour-management-app-bc46e.firebasestorage.app",
-            messagingSenderId: "665605599526",
-            appId: "1:665605599526:web:5499d618c578e98f1c11e7"
-        };
-    
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyBxOpNyCRCMT-wiKs9PxJIqD3rSHnq8La4",
+  authDomain: "tour-management-app-bc46e.firebaseapp.com",
+  projectId: "tour-management-app-bc46e",
+  storageBucket: "tour-management-app-bc46e.firebasestorage.app",
+  messagingSenderId: "665605599526",
+  appId: "1:665605599526:web:5499d618c578e98f1c11e7"
+};
 
-        // 🚨 ¡CÓDIGO DE PROTECCIÓN CORREGIDO! 🚨
-        // Ahora el contenido se oculta y se espera a que Firebase confirme la sesión.
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+      const isAuthenticated = sessionStorage.getItem('authenticated');
+
+    if (isAuthenticated === 'true') {
+        // Si el marcador existe, no hace nada y deja que la página cargue
         auth.onAuthStateChanged(user => {
-            if (user) {
-                // Si el usuario está autenticado, muestra el contenido de la página.
-                document.body.style.display = 'block';
-            } else {
-                // Si no está autenticado, lo redirige al login.
+            if (!user) {
+                // Si el usuario cierra sesión activamente, borra el marcador
+                sessionStorage.removeItem('authenticated');
                 window.location.href = "index.html";
             }
         });
-    </script>
+    } else {
+        // Si el marcador no existe, redirige al login
+        window.location.href = "index.html";
+    }
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tour Management App</title>
@@ -40,7 +43,7 @@
         .menu-link:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8 flex items-center justify-center" style="display: none;">
+<body class="bg-gray-100 min-h-screen p-4 md:p-8 flex items-center justify-center">
     <div class="container text-center">
         <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8">
             Tour Management
@@ -58,10 +61,10 @@
             <a href="traslado-aeropuerto.html" class="menu-link bg-orange-500 text-white hover:bg-orange-600">
                 Traslado Hotel a Aeropuerto
             </a>
-                <a href="vuelos.html" class="menu-link bg-red-500 text-white hover:bg-red-600">
+              <a href="vuelos.html" class="menu-link bg-red-500 text-white hover:bg-red-600">
                 Vuelos
             </a>
-                <a href="roomlist.html" class="menu-link bg-yellow-500 text-white hover:bg-yellow-600">
+             <a href="roomlist.html" class="menu-link bg-yellow-500 text-white hover:bg-yellow-600">
                 Roomlist
             </a>
         </div>
