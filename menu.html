@@ -15,13 +15,21 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+      const isAuthenticated = sessionStorage.getItem('authenticated');
 
-    // Este código redirige al login si el usuario no está autenticado
-    auth.onAuthStateChanged(user => {
-        if (!user) {
-            window.location.href = "login.html";
-        }
-    });
+    if (isAuthenticated === 'true') {
+        // Si el marcador existe, no hace nada y deja que la página cargue
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                // Si el usuario cierra sesión activamente, borra el marcador
+                sessionStorage.removeItem('authenticated');
+                window.location.href = "index.html";
+            }
+        });
+    } else {
+        // Si el marcador no existe, redirige al login
+        window.location.href = "index.html";
+    }
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,4 +70,5 @@
         </div>
     </div>
 </body>
+
 </html>
