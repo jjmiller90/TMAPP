@@ -15,18 +15,16 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-      const isAuthenticated = sessionStorage.getItem('authenticated');
-
-    if (isAuthenticated === 'true') {
-        // Si el marcador existe, no hace nada y deja que la página cargue
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-                // Si el usuario cierra sesión activamente, borra el marcador
-                sessionStorage.removeItem('authenticated');
+         auth.onAuthStateChanged(user => {
+            if (user) {
+                // Si el usuario está autenticado, muestra el contenido de la página.
+                document.body.style.display = 'block';
+            } else {
+                // Si no está autenticado, lo redirige al login.
                 window.location.href = "index.html";
             }
         });
-    } else {
+     else {
         // Si el marcador no existe, redirige al login
         window.location.href = "index.html";
     }
@@ -43,7 +41,7 @@
         .menu-link:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8 flex items-center justify-center">
+<body class="bg-gray-100 min-h-screen p-4 md:p-8 flex items-center justify-center" style="display: none;">
     <div class="container text-center">
         <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8">
             Tour Management
@@ -70,5 +68,4 @@
         </div>
     </div>
 </body>
-
 </html>
